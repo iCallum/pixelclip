@@ -19,12 +19,15 @@ A modern, self-hosted image hosting service with user authentication and ShareX 
 pixelclip.me/
 ├── index.php               # Landing page with glassmorphic design
 ├── config.php              # Database and application configuration
-├── database.sql            # Database schema
+├── database.sql            # Database schema (full)
+├── database-tables-only.sql # Database schema (no CREATE DATABASE)
 ├── login.php               # User login page
 ├── register.php            # User registration (requires invite code)
 ├── logout.php              # Logout handler
 ├── dashboard.php           # User dashboard with gallery
 ├── config-download.php     # Generate personalized ShareX config
+├── change-password.php     # Password reset utility (delete after use)
+├── test-db.php             # Database diagnostics (delete after use)
 ├── api/
 │   └── upload.php          # Upload API endpoint with user authentication
 ├── admin/
@@ -85,11 +88,28 @@ The database schema includes a default admin account:
 - **Username:** `admin`
 - **Password:** `changeme`
 
-**IMPORTANT:** Login immediately and change the admin password, or update it in the database:
+**IMPORTANT:** Change the admin password immediately using one of these methods:
+
+#### Method A: Using the Password Change Script (Easiest)
+
+1. Edit `change-password.php` and set your new password:
+   ```php
+   $username = 'admin';
+   $new_password = 'YourSecurePassword123!';
+   ```
+
+2. Visit `https://pixelclip.me/change-password.php` in your browser
+
+3. **Delete the script immediately** for security:
+   ```bash
+   rm change-password.php
+   ```
+
+#### Method B: Manual SQL Update
 
 ```php
 // Generate a new password hash
-$new_password = password_hash('your_new_password', PASSWORD_DEFAULT);
+php -r "echo password_hash('your_new_password', PASSWORD_DEFAULT);"
 ```
 
 Then update in MySQL:
@@ -216,6 +236,7 @@ ini_set('session.cookie_secure', 1);
 - Check database credentials in `config.php`
 - Ensure MySQL/MariaDB is running
 - Verify database user has correct permissions
+- Run `test-db.php` for detailed diagnostics
 
 ### "Failed to save file"
 - Check `i/` directory exists
@@ -229,6 +250,21 @@ ini_set('session.cookie_secure', 1);
 ### Session issues
 - If using HTTPS, set `session.cookie_secure` to 1
 - For local development without HTTPS, set it to 0
+
+### Can't login / Forgot password
+1. Use `change-password.php` to reset any user's password
+2. Edit the file to set username and new password
+3. Visit it in your browser
+4. Delete the file after use
+
+### Database diagnostics
+- Run `test-db.php` to check:
+  - Database connection
+  - Table existence
+  - Admin user status
+  - Password hash verification
+  - Session configuration
+- **Delete the file after use**
 
 ## Upgrading from Old Version
 
