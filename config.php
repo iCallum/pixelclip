@@ -1,9 +1,9 @@
 <?php
 // Database Configuration
 define('DB_HOST', 'localhost');
-define('DB_NAME', 'pixelclip');
-define('DB_USER', 'pixelclip_user');
-define('DB_PASS', 'CHANGE_THIS_PASSWORD');
+define('DB_NAME', 'ebitlrcj_pixelclip');
+define('DB_USER', 'ebitlrcj');
+define('DB_PASS', 'CHANGE_THIS_PASSWORD'); // Set your database password here
 
 // Site Configuration
 define('BASE_URL', 'https://pixelclip.me');
