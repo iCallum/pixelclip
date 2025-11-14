@@ -1,44 +1,75 @@
 # PixelClip
 
-A lightweight, self-hosted image hosting service designed for use with ShareX. Upload screenshots and images automatically with a simple, secure API.
+A modern, self-hosted image hosting service with user authentication and ShareX integration. Upload screenshots automatically with personalized API tokens and manage your uploads through a beautiful web dashboard.
 
 ## Features
 
-- **ShareX Integration**: Drop-in .sxcu configuration file for instant setup
-- **Token-based Authentication**: Secure uploads with Bearer token authorization
-- **Random Filenames**: Automatically generated unique filenames for privacy
-- **Admin Panel**: Simple web interface to view and manage uploaded images
-- **Lightweight**: Pure PHP with no dependencies or database required
+- **User Authentication**: Secure login system with invite code registration
+- **Personal Dashboards**: Each user has their own gallery with upload statistics
+- **ShareX Integration**: Personalized .sxcu configuration files per user
+- **Per-User API Tokens**: Each user gets a unique, secure API token
+- **Upload Management**: View, organize, and delete your uploads
+- **Admin Panel**: Comprehensive admin interface to manage users and invite codes
+- **Modern UI**: Glassmorphic dark mode design with responsive layouts
+- **Usage Statistics**: Track upload counts and storage usage per user
 
 ## Project Structure
 
 ```
 pixelclip.me/
-├── index.html              # Landing page
-├── pixelclip.sxcu          # ShareX configuration file
+├── index.php               # Landing page with glassmorphic design
+├── config.php              # Database and application configuration
+├── database.sql            # Database schema
+├── login.php               # User login page
+├── register.php            # User registration (requires invite code)
+├── logout.php              # Logout handler
+├── dashboard.php           # User dashboard with gallery
+├── config-download.php     # Generate personalized ShareX config
 ├── api/
-│   └── upload.php          # Upload API endpoint
+│   └── upload.php          # Upload API endpoint with user authentication
 ├── admin/
-│   └── index.php           # Admin panel for managing uploads
+│   └── index.php           # Admin panel for user/invite management
 └── i/                      # Upload directory (auto-created)
 ```
 
-## Setup
+## Requirements
 
-### 1. Configure Upload Token
+- PHP 7.4 or higher
+- MySQL 5.7+ or MariaDB 10.2+
+- Web server (Apache, Nginx, etc.)
+- PDO MySQL extension
+- Write permissions for upload directory
 
-Edit `api/upload.php` and set a secure random token:
+## Installation
 
-```php
-$UPLOAD_TOKEN = "CHANGE_THIS_TO_A_LONG_RANDOM_SECRET";
+### 1. Database Setup
+
+Create a MySQL database and user:
+
+```sql
+CREATE DATABASE pixelclip CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'pixelclip_user'@'localhost' IDENTIFIED BY 'your_secure_password';
+GRANT ALL PRIVILEGES ON pixelclip.* TO 'pixelclip_user'@'localhost';
+FLUSH PRIVILEGES;
 ```
 
-### 2. Update Base URL
+Import the database schema:
 
-In `api/upload.php`, set your domain:
+```bash
+mysql -u pixelclip_user -p pixelclip < database.sql
+```
+
+### 2. Configure Application
+
+Edit `config.php` and update the database credentials:
 
 ```php
-$BASE_URL = "https://pixelclip.me/i/";
+define('DB_HOST', 'localhost');
+define('DB_NAME', 'pixelclip');
+define('DB_USER', 'pixelclip_user');
+define('DB_PASS', 'your_secure_password');
+
+define('BASE_URL', 'https://pixelclip.me');
 ```
 
 ### 3. Create Upload Directory
@@ -48,49 +79,50 @@ mkdir i
 chmod 755 i
 ```
 
-### 4. Configure Admin Credentials
+### 4. First Time Setup
 
-Edit `admin/index.php` and change the default credentials:
+The database schema includes a default admin account:
+- **Username:** `admin`
+- **Password:** `changeme`
+
+**IMPORTANT:** Login immediately and change the admin password, or update it in the database:
 
 ```php
-$USER = "admin";
-$PASS = "changeme";
+// Generate a new password hash
+$new_password = password_hash('your_new_password', PASSWORD_DEFAULT);
 ```
 
-### 5. Update ShareX Configuration
+Then update in MySQL:
 
-Edit `pixelclip.sxcu` with your domain and upload token:
-
-```json
-{
-  "RequestURL": "https://pixelclip.me/api/upload.php",
-  "Headers": {
-    "Authorization": "Bearer YOUR_TOKEN_HERE"
-  }
-}
+```sql
+UPDATE users SET password_hash = 'paste_hash_here' WHERE username = 'admin';
 ```
 
-### 6. Import to ShareX
+### 5. Generate Invite Codes
 
-1. Double-click `pixelclip.sxcu` or import via ShareX Destinations settings
-2. ShareX will automatically use this configuration for uploads
-3. Take a screenshot and it will be uploaded automatically
+1. Login to the admin panel at `/admin/`
+2. Use the "Generate" button to create invite codes
+3. Share invite codes with users you want to grant access
 
 ## Usage
 
-### Uploading via ShareX
+### For Users
 
-Once configured, simply take a screenshot with ShareX and the image will be automatically uploaded to your PixelClip instance. The URL will be copied to your clipboard.
+1. **Register**: Go to `/register.php` with an invite code
+2. **Login**: Access your dashboard at `/dashboard.php`
+3. **Download Config**: Click "Download ShareX Config" to get your personalized .sxcu file
+4. **Import to ShareX**: Double-click the downloaded file or import via ShareX settings
+5. **Upload**: Take screenshots - they'll automatically upload to your account
+6. **Manage**: View and delete your uploads from the dashboard
 
-### Admin Panel
+### For Admins
 
-Access the admin panel at `https://pixelclip.me/admin/` to:
-- View all uploaded images
-- Delete images you no longer need
-
-Default credentials:
-- Username: `admin`
-- Password: `changeme` (change this!)
+Access the admin panel at `/admin/` to:
+- View system statistics (users, uploads, storage)
+- Generate invite codes for new users
+- Manage existing users
+- Delete users and their uploads
+- Monitor unused invite codes
 
 ## API Reference
 
@@ -100,11 +132,13 @@ Default credentials:
 
 **Headers:**
 ```
-Authorization: Bearer YOUR_TOKEN_HERE
+Authorization: Bearer USER_API_TOKEN
 ```
 
 **Body:**
 - `file`: Image file (multipart/form-data)
+- Supported formats: jpg, jpeg, png, gif, webp, bmp, svg, ico
+- Max file size: 10MB (configurable in config.php)
 
 **Response:**
 ```json
@@ -114,20 +148,103 @@ Authorization: Bearer YOUR_TOKEN_HERE
 }
 ```
 
-## Security Notes
+**Error Response:**
+```json
+{
+  "success": false,
+  "error": "Invalid token"
+}
+```
 
-- **Change all default credentials** before deploying
-- Use HTTPS in production
-- Consider adding rate limiting to prevent abuse
-- The upload token should be long and random (32+ characters recommended)
-- Set appropriate file permissions on the `i/` directory
+## Configuration Options
 
-## Requirements
+In `config.php`:
 
-- PHP 7.0 or higher
-- Web server (Apache, Nginx, etc.)
-- Write permissions for upload directory
+```php
+// Maximum upload file size (bytes)
+define('MAX_FILE_SIZE', 10 * 1024 * 1024); // 10MB
+
+// Upload directory
+define('UPLOAD_DIR', __DIR__ . '/i/');
+
+// Session security (set to 0 if not using HTTPS in development)
+ini_set('session.cookie_secure', 1);
+```
+
+## Security Features
+
+- Password hashing with bcrypt
+- Per-user API tokens (64 characters)
+- Prepared SQL statements to prevent injection
+- Session security with httponly and secure flags
+- File type validation
+- File size limits
+- Invite-only registration system
+- User upload isolation
+
+## Security Best Practices
+
+1. **Change default admin password immediately**
+2. **Use HTTPS in production** (required for secure cookies)
+3. **Set strong database passwords**
+4. **Regularly review and delete unused invite codes**
+5. **Monitor storage usage and set limits**
+6. **Keep PHP and MySQL updated**
+7. **Set appropriate file permissions** (755 for directories, 644 for files)
+8. **Consider adding rate limiting** to prevent abuse
+
+## Database Schema
+
+### Users Table
+- Stores user accounts with hashed passwords
+- Each user has a unique API token
+- Tracks admin status and login times
+
+### Uploads Table
+- Links uploads to users
+- Stores file metadata (size, type, original name)
+- Tracks upload timestamps
+
+### Invite Codes Table
+- Manages registration invite codes
+- Tracks who created and used each code
+- Allows admin to control new registrations
+
+## Troubleshooting
+
+### "Database connection failed"
+- Check database credentials in `config.php`
+- Ensure MySQL/MariaDB is running
+- Verify database user has correct permissions
+
+### "Failed to save file"
+- Check `i/` directory exists
+- Verify web server has write permissions
+- Check disk space
+
+### "Invalid token"
+- User needs to download fresh ShareX config from dashboard
+- Verify API token hasn't been regenerated
+
+### Session issues
+- If using HTTPS, set `session.cookie_secure` to 1
+- For local development without HTTPS, set it to 0
+
+## Upgrading from Old Version
+
+If upgrading from the original simple version:
+
+1. Backup your existing `i/` directory
+2. Backup `pixelclip.sxcu` if customized
+3. Run `database.sql` to create tables
+4. Update `config.php` with your settings
+5. Images in `i/` won't be linked to users initially
+6. Users must re-register and download new configs
 
 ## License
 
 This is a personal project. Use at your own risk.
+
+## Credits
+
+Built with PHP, MySQL, and modern CSS (glassmorphic design). No JavaScript frameworks required.
