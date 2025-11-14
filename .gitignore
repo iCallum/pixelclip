@@ -1,0 +1,34 @@
+# PixelClip .gitignore
+
+# Context file (contains sensitive implementation details)
+CONTEXT.md
+
+# Configuration files (may contain credentials)
+config.php
+
+# Database diagnostic tool (should be deleted after use)
+test-db.php
+
+# Upload directory
+i/
+!i/.gitkeep
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment files
+.env
+.env.local
+
+# Temporary files
+*.tmp
+*.log
+
+# Backup files
+*.bak
+*.backup
