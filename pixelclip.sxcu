@@ -1,0 +1,16 @@
+﻿{
+  "Version": "18.0.1",
+  "Name": "pixelclip",
+  "DestinationType": "ImageUploader",
+  "RequestMethod": "POST",
+  "RequestURL": "https://pixelclip.me/api/upload.php",
+  "Headers": {
+    "Authorization": "Bearer jc8E4x9nMm2pXk1j93anQv7PQYUTaB6Z"
+  },
+  "Body": "MultipartFormData",
+  "Arguments": {
+    "file": "@file"
+  },
+  "FileFormName": "file",
+  "URL": "{json:url}"
+}
