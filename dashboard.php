@@ -39,6 +39,56 @@ if (isset($_GET['delete'])) {
         exit;
     }
 }
+function renderGallerySection(array $uploads): string {
+    ob_start();
+    ?>
+    <?php if (empty($uploads)): ?>
+        <div class="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <polyline points="21 15 16 10 5 21"/>
+            </svg>
+            <p>No uploads yet</p>
+            <p style="font-size: 13px; margin-top: 8px;">Download your ShareX config and start uploading!</p>
+        </div>
+    <?php else: ?>
+        <div class="gallery">
+            <?php foreach ($uploads as $upload): ?>
+                <div class="upload-card">
+                    <img src="i/<?php echo htmlspecialchars($upload['filename']); ?>"
+                         alt="<?php echo htmlspecialchars($upload['original_name']); ?>"
+                         class="upload-image"
+                         loading="lazy">
+                    <div class="upload-info">
+                        <div class="upload-name" title="<?php echo htmlspecialchars($upload['original_name']); ?>">
+                            <?php echo htmlspecialchars($upload['original_name']); ?>
+                        </div>
+                        <div class="upload-date">
+                            <?php echo date('M j, Y g:i A', strtotime($upload['uploaded_at'])); ?>
+                        </div>
+                        <div class="upload-actions">
+                            <a href="i/<?php echo htmlspecialchars($upload['filename']); ?>" target="_blank">View</a>
+                            <a href="?delete=<?php echo $upload['id']; ?>"
+                               class="delete"
+                               onclick="return confirm('Delete this upload?')">Delete</a>
+                        </div>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
+    <?php
+    return ob_get_clean();
+}
+
+if (isset($_GET['refresh']) && $_GET['refresh'] === '1') {
+    header('Content-Type: application/json');
+    echo json_encode([
+        'html' => renderGallerySection($uploads),
+    ]);
+    exit;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -192,6 +242,25 @@ if (isset($_GET['delete'])) {
         .btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-outline {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.85);
+        }
+
+        .btn-outline:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.4);
+            box-shadow: none;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
 
         .gallery {
@@ -356,44 +425,50 @@ if (isset($_GET['delete'])) {
                 </svg>
                 Download ShareX Config
             </a>
+            <button type="button" class="btn btn-outline" id="refresh-gallery">
+                Refresh Gallery
+            </button>
         </div>
 
-        <?php if (empty($uploads)): ?>
-            <div class="empty-state">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                    <circle cx="8.5" cy="8.5" r="1.5"/>
-                    <polyline points="21 15 16 10 5 21"/>
-                </svg>
-                <p>No uploads yet</p>
-                <p style="font-size: 13px; margin-top: 8px;">Download your ShareX config and start uploading!</p>
-            </div>
-        <?php else: ?>
-            <div class="gallery">
-                <?php foreach ($uploads as $upload): ?>
-                    <div class="upload-card">
-                        <img src="i/<?php echo htmlspecialchars($upload['filename']); ?>"
-                             alt="<?php echo htmlspecialchars($upload['original_name']); ?>"
-                             class="upload-image"
-                             loading="lazy">
-                        <div class="upload-info">
-                            <div class="upload-name" title="<?php echo htmlspecialchars($upload['original_name']); ?>">
-                                <?php echo htmlspecialchars($upload['original_name']); ?>
-                            </div>
-                            <div class="upload-date">
-                                <?php echo date('M j, Y g:i A', strtotime($upload['uploaded_at'])); ?>
-                            </div>
-                            <div class="upload-actions">
-                                <a href="i/<?php echo htmlspecialchars($upload['filename']); ?>" target="_blank">View</a>
-                                <a href="?delete=<?php echo $upload['id']; ?>"
-                                   class="delete"
-                                   onclick="return confirm('Delete this upload?')">Delete</a>
-                            </div>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
-            </div>
-        <?php endif; ?>
+        <div id="gallery-root">
+            <?php echo renderGallerySection($uploads); ?>
+        </div>
     </div>
+    <script>
+        (function () {
+            const refreshBtn = document.getElementById('refresh-gallery');
+            const galleryRoot = document.getElementById('gallery-root');
+            if (!refreshBtn || !galleryRoot) {
+                return;
+            }
+
+            const defaultLabel = refreshBtn.textContent.trim();
+
+            async function refreshGallery() {
+                refreshBtn.disabled = true;
+                refreshBtn.textContent = 'Refreshing...';
+
+                try {
+                    const response = await fetch('dashboard.php?refresh=1', {
+                        headers: {'X-Requested-With': 'XMLHttpRequest'}
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Request failed');
+                    }
+
+                    const data = await response.json();
+                    galleryRoot.innerHTML = data.html;
+                } catch (error) {
+                    alert('Failed to refresh gallery. Please try again.');
+                } finally {
+                    refreshBtn.disabled = false;
+                    refreshBtn.textContent = defaultLabel;
+                }
+            }
+
+            refreshBtn.addEventListener('click', refreshGallery);
+        })();
+    </script>
 </body>
 </html>
