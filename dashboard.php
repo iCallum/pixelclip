@@ -82,8 +82,31 @@ if (isset($_GET['delete'])) {
 
         .nav {
             display: flex;
-            gap: 16px;
             align-items: center;
+            gap: 0;
+            flex-wrap: wrap;
+        }
+
+        .nav > * {
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+
+        .nav > *:not(:last-child) {
+            margin-right: 16px;
+            padding-right: 16px;
+        }
+
+        .nav > *:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 1px;
+            height: 18px;
+            background: rgba(255, 255, 255, 0.2);
         }
 
         .nav a, .nav button {
@@ -274,6 +297,15 @@ if (isset($_GET['delete'])) {
         }
 
         @media (max-width: 768px) {
+            .nav > *:not(:last-child) {
+                margin-right: 12px;
+                padding-right: 12px;
+            }
+
+            .nav > *:not(:last-child)::after {
+                height: 14px;
+            }
+
             .gallery {
                 grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
                 gap: 12px;
