@@ -104,8 +104,30 @@ $username = $_SESSION['username'] ?? null;
 
         .navbar-links {
             display: flex;
-            gap: 24px;
             align-items: center;
+            gap: 0;
+        }
+
+        .navbar-links > * {
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+
+        .navbar-links > *:not(:last-child) {
+            margin-right: 18px;
+            padding-right: 18px;
+        }
+
+        .navbar-links > *:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 1px;
+            height: 18px;
+            background: rgba(255, 255, 255, 0.2);
         }
 
         .navbar-links a {
@@ -387,12 +409,17 @@ $username = $_SESSION['username'] ?? null;
                 padding: 0 20px;
             }
 
-            .navbar-links {
-                gap: 12px;
-            }
-
             .navbar-links a {
                 font-size: 13px;
+            }
+
+            .navbar-links > *:not(:last-child) {
+                margin-right: 12px;
+                padding-right: 12px;
+            }
+
+            .navbar-links > *:not(:last-child)::after {
+                height: 14px;
             }
 
             .hero {
