@@ -9,6 +9,7 @@ A modern, self-hosted image hosting service with user authentication and ShareX 
 - **ShareX Integration**: Personalized .sxcu configuration files per user
 - **Per-User API Tokens**: Each user gets a unique, secure API token
 - **Upload Management**: View, organize, and delete your uploads
+- **Live Gallery Refresh**: Update your dashboard gallery instantly without reloading
 - **Admin Panel**: Comprehensive admin interface to manage users and invite codes
 - **Modern UI**: Glassmorphic dark mode design with responsive layouts
 - **Usage Statistics**: Track upload counts and storage usage per user
@@ -134,6 +135,7 @@ UPDATE users SET password_hash = 'paste_hash_here' WHERE username = 'admin';
 4. **Import to ShareX**: Double-click the downloaded file or import via ShareX settings
 5. **Upload**: Take screenshots - they'll automatically upload to your account
 6. **Manage**: View and delete your uploads from the dashboard
+7. **Refresh**: Tap the “Refresh Gallery” button to pull in new uploads without reloading the page
 
 ### For Admins
 
