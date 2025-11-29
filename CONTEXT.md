@@ -235,9 +235,9 @@ Each user gets a personalized `.sxcu` file from `config-download.php`:
    - Queries DB for user with matching `api_token`
    - Validates:
      - File was uploaded
-     - File size <= MAX_FILE_SIZE (10MB default)
-     - File extension is allowed (jpg, jpeg, png, gif, webp, bmp, svg, ico)
-      - Generates random filename and creates a user-specific subdirectory
+          - File size <= MAX_FILE_SIZE (10MB default)                       
+          - File extension is allowed (jpg, jpeg, png, gif, webp, bmp, ico) 
+           - Generates random filename and creates a user-specific subdirectory
         (e.g., `i/john_doe/a1b2c3d4.png`) if it doesn't exist.           
       - Saves file to the user's subdirectory within `UPLOAD_DIR`.       
       - Inserts record into `uploads` table with the full relative path 
@@ -455,11 +455,21 @@ for access.
 - Admin panel checks `is_admin` flag
 - Invite-only registration prevents spam
 
-### Known Security Considerations
-1. **Session Cookie Secure Flag**: Set to 0 for local development without HTTPS
-2. **File Type Validation**: Basic extension check - could be enhanced with image validation
-3. **Rate Limiting**: Not implemented - consider adding for production
-4. **CSRF Protection**: Not implemented - consider adding for admin actions
+### Known Security Considerations                                      
+
+1. **Session Cookie Secure Flag**: Set to 0 for local development witho
+
+ut HTTPS                                                               
+
+2. **File Type Validation**: Basic extension check - could be enhanced 
+
+with image validation                                                  
+
+3. **Rate Limiting**: Implemented (File-based, 5 attempts/15 mins for login)
+
+4. **CSRF Protection**: Implemented on all state-changing forms (Login, Register, Dashboard)
+
+                                                                       
 
 ---
 
@@ -726,27 +736,26 @@ views_limit: (optional) integer, max number of views before file expires.
 - [ ] Image preview before upload                                      
 - [ ] Image optimization/compression                                   
 - [ ] Multi-file upload support                                        
-- [ ] API rate limiting                                                
+- [x] API rate limiting (Implemented for Login)                        
 - [ ] 2FA authentication                                               
 - [ ] Email notifications                                              
 - [ ] Activity logs                                                    
 - [ ] Dark/light theme toggle                                          
-### Performance Optimizations
-- [ ] Image thumbnail generation
-- [ ] CDN integration
-- [ ] Database query caching
-- [ ] Lazy loading for galleries
-- [ ] Image lazy loading
-- [ ] Gzip compression
-- [ ] Browser caching headers
-
-### Security Enhancements
-- [ ] CSRF token implementation
-- [ ] Rate limiting (per IP, per user)
-- [ ] Brute force protection
-- [ ] File content validation (beyond extension)
-- [ ] Virus scanning integration
-- [ ] Content Security Policy headers
+### Performance Optimizations                                          
+- [ ] Image thumbnail generation                                       
+- [ ] CDN integration                                                  
+- [ ] Database query caching                                           
+- [ ] Lazy loading for galleries                                       
+- [ ] Image lazy loading                                               
+- [ ] Gzip compression                                                 
+- [ ] Browser caching headers                                          
+                                                                       
+### Security Enhancements                                              
+- [x] CSRF token implementation                                        
+- [x] Rate limiting (per IP, per user)                                 
+- [ ] Brute force protection                                           
+- [ ] File content validation (beyond extension)                       
+- [ ] Virus scanning integration- [ ] Content Security Policy headers
 - [ ] XSS protection headers
 
 ---
@@ -892,4 +901,4 @@ This is a self-hosted personal project. For issues or questions:
 ---
 
 **Last Updated**: 2025-11-29                                           
-**Version**: 2.1 (Enhanced Dashboard and Security)
+**Version**: 2.2 (Security Hardening: CSRF, Rate Limiting, Anti-XSS)
