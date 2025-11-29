@@ -636,16 +636,7 @@ $username = $_SESSION['username'] ?? null;
             </div>
             <div class="footer-section">
                 <h4>Resources</h4>
-                <a href="https://github.com/iCallum/pixelclip" target="_blank">GitHub</a>
                 <a href="https://getsharex.com/" target="_blank">Download ShareX</a>
-            </div>
-            <div class="footer-section">
-                <h4>Admin</h4>
-                <?php if ($isLoggedIn): ?>
-                    <a href="admin/">Admin Panel</a>
-                <?php else: ?>
-                    <a href="admin/">Admin Login</a>
-                <?php endif; ?>
             </div>
         </div>
         <div class="footer-bottom">
