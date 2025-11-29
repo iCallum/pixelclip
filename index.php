@@ -485,6 +485,30 @@ $username = $_SESSION['username'] ?? null;
             font-size: 14px;
         }
 
+        /* Scroll Down Indicator */
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0) translateX(-50%); }
+            40% { transform: translateY(-10px) translateX(-50%); }
+            60% { transform: translateY(-5px) translateX(-50%); }
+        }
+
+        .scroll-down {
+            display: none;
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.5);
+            animation: bounce 2s infinite;
+            cursor: pointer;
+            z-index: 20;
+            transition: color 0.3s;
+        }
+
+        .scroll-down:hover {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .navbar-container {
@@ -506,6 +530,14 @@ $username = $_SESSION['username'] ?? null;
 
             .hero {
                 padding: 60px 20px 40px;
+                min-height: calc(100vh - 80px);
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+            }
+
+            .scroll-down {
+                display: block;
             }
 
             .hero h1 {
@@ -586,6 +618,12 @@ $username = $_SESSION['username'] ?? null;
                 </a>
                 <a href="login.php" class="btn btn-outline">Sign In</a>
             <?php endif; ?>
+        </div>
+
+        <div class="scroll-down" onclick="document.querySelector('.stats-section').scrollIntoView({behavior: 'smooth'})">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M7 13l5 5 5-5M7 6l5 5 5-5"/>
+            </svg>
         </div>
     </section>
 
