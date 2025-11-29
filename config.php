@@ -50,15 +50,24 @@ function requireLogin() {
     }
 }
 
-function getCurrentUser() {
-    if (!isLoggedIn()) {
-        return null;
-    }
+function getCurrentUser() {                                            
 
-    $db = getDB();
-    $stmt = $db->prepare("SELECT id, username, email, api_token, is_admin FROM users WHERE id = ?");
-    $stmt->execute([$_SESSION['user_id']]);
-    return $stmt->fetch();
+    if (!isLoggedIn()) {                                               
+
+        return null;                                                   
+
+    }                                                                  
+
+                                                                       
+
+    $db = getDB();                                                     
+
+    $stmt = $db->prepare("SELECT id, username, email, api_token, is_admin, storage_quota FROM users WHERE id = ?");                                          
+
+    $stmt->execute([$_SESSION['user_id']]);                            
+
+    return $stmt->fetch();                                             
+
 }
 
 function generateToken($length = 32) {

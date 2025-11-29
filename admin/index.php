@@ -67,6 +67,20 @@ if (isset($_GET['delete_user'])) {
     }
 }
 
+// Handle user quota update
+if (isset($_POST['update_quota'])) {
+    $target_user_id = (int)$_POST['user_id'];
+    $new_quota_mb = (int)$_POST['quota_mb'];
+    $new_quota_bytes = $new_quota_mb * 1024 * 1024; // Convert MB to Bytes
+
+    if ($target_user_id > 0) {
+        $stmt = $db->prepare("UPDATE users SET storage_quota = ? WHERE id = ?");
+        $stmt->execute([$new_quota_bytes, $target_user_id]);
+        header('Location: index.php?quota_updated=1');
+        exit;
+    }
+}
+
 // Handle invite code deletion
 if (isset($_GET['delete_invite'])) {
     $invite_id = (int)$_GET['delete_invite'];
@@ -440,6 +454,7 @@ $invites = $stmt->fetchAll();
                         <th>Uploads</th>
                         <th>Storage</th>
                         <th>Joined</th>
+                        <th>Quota</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -456,7 +471,19 @@ $invites = $stmt->fetchAll();
                             <td><?php echo number_format($u['upload_count']); ?></td>
                             <td><?php echo formatBytes($u['total_size']); ?></td>
                             <td><?php echo date('M j, Y', strtotime($u['created_at'])); ?></td>
+                            <td><?php echo ($u['storage_quota'] > 0) ? formatBytes($u['storage_quota']) : 'Unlimited'; ?></td>
                             <td>
+                                <form method="POST" style="display:inline-block; margin-right: 10px;">
+                                    <input type="hidden" name="user_id" value="<?php echo $u['id']; ?>">
+                                    <select name="quota_mb" onchange="this.form.submit()">
+                                        <option value="-1" <?php echo ($u['storage_quota'] <= 0) ? 'selected' : ''; ?>>Unlimited</option>
+                                        <option value="100" <?php echo ($u['storage_quota'] == 100 * 1024 * 1024) ? 'selected' : ''; ?>>100MB</option>
+                                        <option value="500" <?php echo ($u['storage_quota'] == 500 * 1024 * 1024) ? 'selected' : ''; ?>>500MB</option>
+                                        <option value="1024" <?php echo ($u['storage_quota'] == 1024 * 1024 * 1024) ? 'selected' : ''; ?>>1GB</option>
+                                        <option value="5120" <?php echo ($u['storage_quota'] == 5120 * 1024 * 1024) ? 'selected' : ''; ?>>5GB</option>
+                                    </select>
+                                    <input type="hidden" name="update_quota" value="1">
+                                </form>
                                 <?php if ($u['id'] !== $user['id']): ?>
                                     <a href="?delete_user=<?php echo $u['id']; ?>"
                                        class="action-link delete"
