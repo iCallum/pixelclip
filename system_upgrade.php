@@ -1,9 +1,11 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 require_once 'config.php';
 
 // Only allow admin to run this, or if it's a CLI run
 if (php_sapi_name() !== 'cli' && (!isLoggedIn() || !getCurrentUser()['is_admin'])) {
-    die('Access Denied. Please log in as Admin to run this upgrade script.');
+    die('Access Denied. Please log in as Admin.');
 }
 
 $db = getDB();
