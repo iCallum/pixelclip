@@ -727,8 +727,7 @@ $username = $_SESSION['username'] ?? null;
             </div>
         </div>
         <div class="footer-bottom">
-            &copy; <?php echo date('Y'); ?> PixelClip. Built with PHP & MySQL.
-        </div>
+                            &copy; <?php echo date('Y'); ?> PixelClip.        </div>
     </footer>
 
     <script>
