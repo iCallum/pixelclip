@@ -35,6 +35,7 @@ pixelclip.me/
 ├── database-tables-only.sql # Schema without CREATE DATABASE (for shared hosting)
 ├── test-db.php             # Database diagnostic tool (delete after use)
 ├── change-password.php     # Password reset utility (delete after use)
+├── system_upgrade.php      # One-time script to update database schema (delete after use)
 │
 ├── index.php               # Landing page (public)
 ├── login.php               # User login page
@@ -52,7 +53,8 @@ pixelclip.me/
 ├── i/                      # Upload directory (created automatically) 
 │   ├── .htaccess           # Forbids directory listing, handles URL rewriting
 │   ├── index.php           # Prevents direct access / directory listing (403 Forbidden)
-│   ├── view.php            # Rewrites public image URLs to find files in user subdirectories
+│   ├── view.php            # Rewrites public image URLs to find files 
+                            # in user subdirectories, enforces expiration and view limits.
 │   └── [username]/         # User-specific subdirectories
 │       └── [uploaded files] # Random filenames: a1b2c3d4.png (e.g., /i/john_doe/a1b2c3d4.png)│
 └── pixelclip.sxcu          # Example ShareX config (not used in app)
@@ -69,33 +71,68 @@ pixelclip.me/
 
 ### Tables
 
-#### `users`
-Stores user accounts and authentication data.
+#### `users`                                                           
 
-```sql
-id              INT PRIMARY KEY AUTO_INCREMENT
-username        VARCHAR(50) UNIQUE NOT NULL
-email           VARCHAR(255) UNIQUE NOT NULL
-password_hash   VARCHAR(255) NOT NULL           # bcrypt hash
-api_token       VARCHAR(64) UNIQUE NOT NULL     # 64-char hex string
-is_admin        BOOLEAN DEFAULT FALSE
-created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-last_login      TIMESTAMP NULL
-```
+Stores user accounts and authentication data.                          
 
-**Indexes**: api_token, username, email
+                                                                       
 
-#### `uploads`
-Tracks all uploaded files and links them to users.
+```sql                                                                 
 
-```sql
-id              INT PRIMARY KEY AUTO_INCREMENT
-user_id         INT NOT NULL                    # FK to users.id
-filename        VARCHAR(255) NOT NULL           # e.g., a1b2c3d4.png
-original_name   VARCHAR(255) NOT NULL           # User's original filename
-file_size       BIGINT NOT NULL                 # Bytes
-mime_type       VARCHAR(100)                    # e.g., image/png
-uploaded_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+id              INT PRIMARY KEY AUTO_INCREMENT                         
+
+username        VARCHAR(50) UNIQUE NOT NULL                            
+
+email           VARCHAR(255) UNIQUE NOT NULL                           
+
+password_hash   VARCHAR(255) NOT NULL           # bcrypt hash          
+
+api_token       VARCHAR(64) UNIQUE NOT NULL     # 64-char hex string   
+
+is_admin        BOOLEAN DEFAULT FALSE                                  
+
+storage_quota   BIGINT NULL DEFAULT 1073741824  # User's max storage in bytes (default 1GB), NULL for unlimited
+
+created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP                    
+
+last_login      TIMESTAMP NULL                                         
+
+```                                                                    
+
+                                                                       
+
+**Indexes**: api_token, username, email                                
+
+                                                                       
+
+#### `uploads`                                                         
+
+Tracks all uploaded files and links them to users.                     
+
+                                                                       
+
+```sql                                                                 
+
+id              INT PRIMARY KEY AUTO_INCREMENT                         
+
+user_id         INT NOT NULL                    # FK to users.id       
+
+filename        VARCHAR(255) NOT NULL           # e.g., john_doe/a1b2c3d4.png   
+
+original_name   VARCHAR(255) NOT NULL           # User's original filename                                                                    
+
+file_size       BIGINT NOT NULL                 # Bytes                
+
+mime_type       VARCHAR(100)                    # e.g., image/png      
+
+uploaded_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP                    
+
+expires_at      TIMESTAMP NULL                  # Time when upload automatically expires and is deleted
+
+views_limit     INT NULL                        # Max number of views before upload is automatically deleted
+
+views_count     INT DEFAULT 0                   # Current number of views
+
 ```
 
 **Foreign Keys**: user_id → users.id (CASCADE DELETE)
@@ -229,7 +266,7 @@ Central configuration and database connection.
 - `getDB()`: Returns PDO instance (singleton pattern)
 - `isLoggedIn()`: Returns true if user is authenticated
 - `requireLogin()`: Redirects to login if not authenticated
-- `getCurrentUser()`: Returns current user's data array
+- `getCurrentUser()`: Returns current user's data array, including `storage_quota`.
 - `generateToken($length)`: Generates random hex string
 - `formatBytes($bytes, $precision)`: Formats bytes to human-readable
 
@@ -245,14 +282,29 @@ Landing page with dynamic content based on login status.
 ### `dashboard.php`
 User's personal upload management page.
 
-**Features**:
-- Requires login (`requireLogin()`)
-- Displays stats: total uploads, storage used, account type
-- Gallery view of all user's uploads (ordered by newest first)
-- Delete functionality (validates ownership before deleting)
-- Download ShareX config button
-- AJAX “Refresh Gallery” button (fetches `dashboard.php?refresh=1` and swaps gallery HTML)
-- Responsive grid layout
+**Features**:                                                          
+
+- Requires login (`requireLogin()`)                                    
+
+- Displays stats: total uploads, storage used, account type, **storage quota, and remaining space**.            
+
+- **Web Uploader**: Drag & drop and browse functionality for direct browser uploads, with options for **expiration (time or views)**.
+
+- **Lightbox Viewer**: Clickable images open a modal with full image preview, details (filename, size, dates, expiration info), and quick actions (copy URL, download, delete).
+
+- **Bulk Delete**: Checkboxes allow selecting multiple uploads for bulk deletion.
+
+- Gallery view of all user's uploads (ordered by newest first).         
+
+- Delete functionality (validates ownership before deleting).           
+
+- Download ShareX config button.                                        
+
+- AJAX “Refresh Gallery” button (fetches `dashboard.php?refresh=1` and 
+
+swaps gallery HTML).                                                    
+
+- Responsive grid layout.
 
 **Implementation Notes**:
 - `renderGallerySection($uploads)` centralizes gallery markup so both the full page and AJAX responses stay in sync.
@@ -277,11 +329,11 @@ Admin panel for system management.
   - Generate 1-10 codes at once
   - View all unused codes
   - Delete unused codes
-- **User Management**:
-  - View all users with stats
-  - Delete users (cascades to uploads and invite codes)
+- **User Management**:                                                 
+  - View all users with stats, including current storage usage and assigned quota.                                                 
+  - **Manage Storage Quotas**: Set storage limits (e.g., 100MB, 1GB, Unlimited) for individual users.
+  - Delete users (cascades to uploads and invite codes)                
   - Cannot delete yourself
-
 **Security**:
 - Checks `$user['is_admin']` before rendering
 - Returns 403 if non-admin tries to access
@@ -305,20 +357,21 @@ Utility script for changing user passwords.
 
 **Security Note**: This file should be deleted after use as it can change any user's password.
 
-### `api/upload.php`
-ShareX upload endpoint.
-
-**Process**:
-1. Get Authorization header
-2. Extract Bearer token
-3. Find user by `api_token`
-4. Validate file upload
-5. Check file size and type
-6. Generate unique filename
-7. Move uploaded file
-8. Record in database
-9. Return JSON response
-
+### `api/upload.php`                                                   
+Upload endpoint for both ShareX and web interface.                                                
+                                                                       
+**Process**:                                                           
+1. Authenticate user via session (for web uploads) OR Authorization header (for ShareX).                                         
+2. Extract Bearer token if using token auth.                                                
+3. Find user by `api_token` or session `user_id`, fetching `storage_quota`.                                            
+4. Validate file upload (presence, size).
+5. **Check user's storage quota**: If file exceeds quota, return 403.                                                
+6. Validate file type (extension).
+7. Handle optional expiration parameters (`expires_in` seconds or `views_limit` from `$_POST`).
+8. Generate unique filename and ensure user-specific subdirectory exists.
+9. Move uploaded file.                                                  
+10. Record in database, including `expires_at` and `views_limit`.                                                  
+11. Return JSON response with "clean" URL (basename).
 **Error Responses**:
 - 401: Missing/invalid token
 - 400: No file, file too large, invalid file type
@@ -386,7 +439,11 @@ background-clip: text;
 - MIME type validation with `mime_content_type()`                      
 - **User-specific subdirectories**: Files are stored in `i/<username>/` to better organize and isolate user uploads.
 - **Directory Listing Prevention**: `.htaccess` (Options -Indexes) and `i/index.php` (403 Forbidden) are used to prevent unauthorized browsing of the upload directories.
-- **URL Privacy**: Public URLs for uploaded files (`/i/a1b2c3d4.png`) hide the user's subdirectory, relying on `i/view.php` and URL rewriting for access.
+- **URL Privacy**: Public URLs for uploaded files (`/i/a1b2c3d4.png`) h
+ide the user's subdirectory, relying on `i/view.php` and URL rewriting 
+for access.                                                            
+- **Storage Quotas**: Admins can set storage limits per user; uploads are rejected if the quota is exceeded.
+- **Expirable Uploads**: Files can be set to expire after a certain time (`expires_at`) or a number of views (`views_limit`), enhancing temporary sharing security.
 ### Session Security
 - HttpOnly cookies (JavaScript cannot access)
 - Secure cookies (HTTPS only in production)
@@ -546,7 +603,9 @@ post_max_size = 50M
 
 ### "Failed to save file"
 - Check `/i/` directory exists (and the user's subdirectory within `i/`)                                         
-- Check permissions: `chmod 755 i` (and ensure the web server has write permissions to create subdirectories within `i/`)- Check disk space: `df -h`
+- Check permissions: `chmod 755 i` (and ensure the web server has write permissions to create subdirectories within `i/`)- Check disk space: `
+df -h`                                                                 
+- Check if user's storage quota is full.
 - Check PHP error log
 
 ### Login Issues / Forgot Password
@@ -589,11 +648,12 @@ Authorization: Bearer {user_api_token}
 Content-Type: multipart/form-data
 ```
 
-**Body**:
+**Body**:                                                              
+```                                                                    
+file: (binary image data)                                              
+expires_in: (optional) integer, number of seconds until file expires.
+views_limit: (optional) integer, max number of views before file expires.
 ```
-file: (binary image data)
-```
-
 **Success Response (200)**:
 ```json
 {
@@ -656,25 +716,20 @@ file: (binary image data)
 
 ## Future Enhancements
 
-### Potential Features
-- [ ] Image thumbnails for gallery view
-- [ ] Search/filter uploads
-- [ ] Upload history/timeline view
-- [ ] Bulk delete
-- [ ] Custom upload URLs/slugs
-- [ ] Public/private upload toggle
-- [ ] Image preview before upload
-- [ ] Drag & drop web uploader
-- [ ] Storage quotas per user
-- [ ] Upload expiration dates
-- [ ] Image optimization/compression
-- [ ] Multi-file upload support
-- [ ] API rate limiting
-- [ ] 2FA authentication
-- [ ] Email notifications
-- [ ] Activity logs
-- [ ] Dark/light theme toggle
-
+### Potential Features                                                 
+- [ ] Image thumbnails for gallery view                                
+- [ ] Search/filter uploads                                            
+- [ ] Upload history/timeline view                                     
+- [ ] Custom upload URLs/slugs                                         
+- [ ] Public/private upload toggle                                     
+- [ ] Image preview before upload                                      
+- [ ] Image optimization/compression                                   
+- [ ] Multi-file upload support                                        
+- [ ] API rate limiting                                                
+- [ ] 2FA authentication                                               
+- [ ] Email notifications                                              
+- [ ] Activity logs                                                    
+- [ ] Dark/light theme toggle                                          
 ### Performance Optimizations
 - [ ] Image thumbnail generation
 - [ ] CDN integration
@@ -752,31 +807,76 @@ file: (binary image data)
 - [ ] Password under 8 chars rejected
 - [ ] Non-existent username shows error
 
-### File Upload (ShareX)
+### File Upload (ShareX & Web)
+
 - [ ] Upload PNG image
+
 - [ ] Upload JPG image
+
 - [ ] Large file rejected
+
 - [ ] Invalid file type rejected
+
 - [ ] Invalid token rejected
+
 - [ ] Missing file rejected
-- [ ] URL returned and accessible                                      
+
+- [ ] URL returned and accessible
+
 - [ ] Uploaded file accessible via "clean" URL (without username in path)
+
 - [ ] Direct access to user subdirectory in `i/` is forbidden (403 or blank page)
 
+- [ ] Upload with expiration time set works (file expires and is deleted)
+
+- [ ] Upload with view limit set works (file expires after N views)
+
+- [ ] Upload rejected if user exceeds storage quota
+
+
+
 ### Dashboard
-- [ ] Stats display correctly
+
+- [ ] Stats display correctly (including storage quota and remaining space)
+
+- [ ] Web uploader (drag & drop/browse) works
+
+- [ ] Web uploader respects file size limits and types
+
+- [ ] Web uploader sends expiration parameters correctly
+
+- [ ] Lightbox opens correctly for images
+
+- [ ] Lightbox displays correct image details and actions (copy URL, download, delete)
+
+- [ ] Bulk delete: select multiple and delete works
+
 - [ ] Gallery shows user's uploads
+
 - [ ] Delete removes file and record
+
 - [ ] Cannot delete other user's files
+
 - [ ] ShareX config download works
+
 - [ ] Refresh button updates the gallery without full page reload
 
+
+
 ### Admin Panel
+
 - [ ] Non-admin cannot access
+
 - [ ] Invite code generation works
-- [ ] User list displays correctly
-- [ ] User deletion works
+
+- [ ] User list displays correctly (including current storage and quota)
+
+- [ ] User storage quota can be updated
+
+- [ ] User deletion works (cascades and cleans up files)
+
 - [ ] Cannot delete self
+
 - [ ] Stats accurate
 
 ---
@@ -790,5 +890,5 @@ This is a self-hosted personal project. For issues or questions:
 
 ---
 
-**Last Updated**: 2025-01-14
-**Version**: 2.0 (Multi-user with authentication)
+**Last Updated**: 2025-11-29                                           
+**Version**: 2.1 (Enhanced Dashboard and Security)
