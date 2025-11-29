@@ -90,7 +90,7 @@ try {
 
     echo json_encode([
         "success" => true,
-        "url" => BASE_URL . "/i/" . $filename
+        "url" => BASE_URL . "/i/" . basename($filename)
     ]);
 } catch (Exception $e) {
     // If database insert fails, delete the uploaded file
