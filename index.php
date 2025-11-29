@@ -188,6 +188,10 @@ $username = $_SESSION['username'] ?? null;
             padding: 100px 40px 80px;
             max-width: 900px;
             margin: 0 auto;
+            min-height: calc(100vh - 80px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
 
         .hero h1 {
@@ -493,7 +497,6 @@ $username = $_SESSION['username'] ?? null;
         }
 
         .scroll-down {
-            display: none;
             position: absolute;
             bottom: 30px;
             left: 50%;
@@ -531,13 +534,6 @@ $username = $_SESSION['username'] ?? null;
             .hero {
                 padding: 60px 20px 40px;
                 min-height: calc(100svh - 80px);
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-            }
-
-            .scroll-down {
-                display: block;
             }
 
             .hero h1 {
