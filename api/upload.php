@@ -57,12 +57,14 @@ if (!in_array($ext, $allowed_extensions)) {
 }
 
 // Generate unique filename
-$filename = bin2hex(random_bytes(8)) . "." . $ext;
+$userFolder = $user['username'];
+$filename = $userFolder . '/' . bin2hex(random_bytes(8)) . "." . $ext;
 $filepath = UPLOAD_DIR . $filename;
 
 // Ensure upload directory exists
-if (!is_dir(UPLOAD_DIR)) {
-    mkdir(UPLOAD_DIR, 0755, true);
+$userUploadDir = UPLOAD_DIR . $userFolder;
+if (!is_dir($userUploadDir)) {
+    mkdir($userUploadDir, 0755, true);
 }
 
 // Move uploaded file
