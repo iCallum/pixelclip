@@ -58,7 +58,7 @@ if (isset($user['storage_quota']) && $user['storage_quota'] > 0) {
 $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
 if (!$ext) $ext = "png";
 
-$allowed_extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'ico'];
+$allowed_extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'ico'];
 if (!in_array($ext, $allowed_extensions)) {
     http_response_code(400);
     echo json_encode(["success" => false, "error" => "Invalid file type"]);

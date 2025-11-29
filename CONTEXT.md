@@ -270,17 +270,18 @@ Central configuration and database connection.
 - `generateToken($length)`: Generates random hex string
 - `formatBytes($bytes, $precision)`: Formats bytes to human-readable
 
-### `index.php`
-Landing page with dynamic content based on login status.
-
-**Features**:
-- Starts session to check login status
+### `index.php`                                                        
+Landing page with dynamic content based on login status.               
+                                                                       
+**Features**:                                                          
+- Starts session to check login status                                 
 - Shows different navbar/hero buttons for logged in vs logged out users
-- Displays upload count from `/i/` directory
+- Displays upload count from `/i/` directory                           
 - Responsive glassmorphic design with animated background orbs
-
-### `dashboard.php`
-User's personal upload management page.
+- **Full-Screen Hero**: Uses `min-height: 100vh` (desktop) and `100svh` (mobile) to ensure the hero section fills the screen.
+- **Scroll Indicator**: Animated, gradient-styled down arrow guides users to scroll.
+                                                                       
+### `dashboard.php`User's personal upload management page.
 
 **Features**:                                                          
 

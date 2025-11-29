@@ -1,7 +1,8 @@
 <?php
+require_once 'config.php';
+
 // Check if user is logged in
-session_start();
-$isLoggedIn = isset($_SESSION['user_id']);
+$isLoggedIn = isLoggedIn();
 $username = $_SESSION['username'] ?? null;
 ?>
 <!DOCTYPE html>

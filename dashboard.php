@@ -7,6 +7,7 @@ $db = getDB();
 
 // Handle bulk delete request
 if (isset($_POST['bulk_delete'])) {
+    verifyCSRFToken($_POST['csrf_token'] ?? '');
     $upload_ids = $_POST['upload_ids'] ?? [];
     if (!empty($upload_ids) && is_array($upload_ids)) {
         foreach ($upload_ids as $upload_id) {
@@ -31,6 +32,7 @@ if (isset($_POST['bulk_delete'])) {
 
 // Handle single delete request (existing logic, updated for relative path)
 if (isset($_GET['delete'])) {
+    verifyCSRFToken($_GET['csrf_token'] ?? '');
     $upload_id = (int)$_GET['delete'];
 
     // Verify ownership
@@ -83,6 +85,7 @@ function renderGallerySection(array $uploads): string {
         </div>
     <?php else: ?>
         <form id="gallery-form" method="POST" action="dashboard.php">
+            <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
             <div class="gallery">
                 <?php foreach ($uploads as $upload):
                     $public_url = BASE_URL . "/i/" . basename($upload['filename']);
@@ -120,7 +123,7 @@ function renderGallerySection(array $uploads): string {
                             </div>
                             <div class="upload-actions">
                                 <a href="<?php echo htmlspecialchars($public_url); ?>" target="_blank">View</a>
-                                <a href="?delete=<?php echo $upload['id']; ?>"
+                                <a href="?delete=<?php echo $upload['id']; ?>&csrf_token=<?php echo generateCSRFToken(); ?>"
                                    class="delete"
                                    onclick="return confirm('Delete this upload?')">Delete</a>
                             </div>
@@ -756,6 +759,7 @@ if (isset($_GET['refresh']) && $_GET['refresh'] === '1') {
 
     <script>
         const BASE_URL = '<?php echo BASE_URL; ?>';
+        const CSRF_TOKEN = '<?php echo generateCSRFToken(); ?>';
         const MAX_FILE_SIZE = <?php echo MAX_FILE_SIZE; ?>;
         const USER_API_TOKEN = '<?php echo htmlspecialchars($user["api_token"]); ?>'; // Assuming we can use this for web upload, or set it to null for session uploads
 
@@ -976,7 +980,7 @@ if (isset($_GET['refresh']) && $_GET['refresh'] === '1') {
             if (confirm('Are you sure you want to delete this upload?')) {
                 try {
                     // Use standard delete method (GET request with ?delete=ID)
-                    const response = await fetch(`dashboard.php?delete=${currentUploadId}`);
+                    const response = await fetch(`dashboard.php?delete=${currentUploadId}&csrf_token=${CSRF_TOKEN}`);
                     if (response.ok) {
                         alert('Upload deleted!');
                         closeLightbox();

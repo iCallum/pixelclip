@@ -5,64 +5,69 @@ $error = '';
 $success = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = trim($_POST['username'] ?? '');
-    $email = trim($_POST['email'] ?? '');
-    $password = $_POST['password'] ?? '';
-    $password_confirm = $_POST['password_confirm'] ?? '';
-    $invite_code = trim($_POST['invite_code'] ?? '');
-
-    // Validation
-    if (empty($username) || empty($email) || empty($password) || empty($invite_code)) {
-        $error = 'All fields are required';
-    } elseif (strlen($username) < 3 || strlen($username) > 50) {
-        $error = 'Username must be 3-50 characters';
-    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $error = 'Invalid email address';
-    } elseif (strlen($password) < 8) {
-        $error = 'Password must be at least 8 characters';
-    } elseif ($password !== $password_confirm) {
-        $error = 'Passwords do not match';
+    // CSRF Protection
+    if (!isset($_POST['csrf_token']) || !verifyCSRFToken($_POST['csrf_token'])) {
+        $error = 'Invalid request (CSRF token mismatch). Please refresh and try again.';
     } else {
-        $db = getDB();
-
-        // Check if invite code is valid and unused
-        $stmt = $db->prepare("SELECT id, used_by FROM invite_codes WHERE code = ?");
-        $stmt->execute([$invite_code]);
-        $invite = $stmt->fetch();
-
-        if (!$invite) {
-            $error = 'Invalid invite code';
-        } elseif ($invite['used_by'] !== null) {
-            $error = 'Invite code already used';
+        $username = trim($_POST['username'] ?? '');
+        $email = trim($_POST['email'] ?? '');
+        $password = $_POST['password'] ?? '';
+        $password_confirm = $_POST['password_confirm'] ?? '';
+        $invite_code = trim($_POST['invite_code'] ?? '');
+    
+        // Validation
+        if (empty($username) || empty($email) || empty($password) || empty($invite_code)) {
+            $error = 'All fields are required';
+        } elseif (strlen($username) < 3 || strlen($username) > 50) {
+            $error = 'Username must be 3-50 characters';
+        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $error = 'Invalid email address';
+        } elseif (strlen($password) < 8) {
+            $error = 'Password must be at least 8 characters';
+        } elseif ($password !== $password_confirm) {
+            $error = 'Passwords do not match';
         } else {
-            // Check if username or email already exists
-            $stmt = $db->prepare("SELECT id FROM users WHERE username = ? OR email = ?");
-            $stmt->execute([$username, $email]);
-            if ($stmt->fetch()) {
-                $error = 'Username or email already exists';
+            $db = getDB();
+    
+            // Check if invite code is valid and unused
+            $stmt = $db->prepare("SELECT id, used_by FROM invite_codes WHERE code = ?");
+            $stmt->execute([$invite_code]);
+            $invite = $stmt->fetch();
+    
+            if (!$invite) {
+                $error = 'Invalid invite code';
+            } elseif ($invite['used_by'] !== null) {
+                $error = 'Invite code already used';
             } else {
-                // Create user
-                $password_hash = password_hash($password, PASSWORD_DEFAULT);
-                $api_token = generateToken(32);
-
-                $stmt = $db->prepare("INSERT INTO users (username, email, password_hash, api_token) VALUES (?, ?, ?, ?)");
-
-                try {
-                    $db->beginTransaction();
-
-                    $stmt->execute([$username, $email, $password_hash, $api_token]);
-                    $user_id = $db->lastInsertId();
-
-                    // Mark invite code as used
-                    $stmt = $db->prepare("UPDATE invite_codes SET used_by = ?, used_at = NOW() WHERE id = ?");
-                    $stmt->execute([$user_id, $invite['id']]);
-
-                    $db->commit();
-
-                    $success = 'Account created successfully! You can now login.';
-                } catch (Exception $e) {
-                    $db->rollBack();
-                    $error = 'Registration failed. Please try again.';
+                // Check if username or email already exists
+                $stmt = $db->prepare("SELECT id FROM users WHERE username = ? OR email = ?");
+                $stmt->execute([$username, $email]);
+                if ($stmt->fetch()) {
+                    $error = 'Username or email already exists';
+                } else {
+                    // Create user
+                    $password_hash = password_hash($password, PASSWORD_DEFAULT);
+                    $api_token = generateToken(32);
+    
+                    $stmt = $db->prepare("INSERT INTO users (username, email, password_hash, api_token) VALUES (?, ?, ?, ?)");
+    
+                    try {
+                        $db->beginTransaction();
+    
+                        $stmt->execute([$username, $email, $password_hash, $api_token]);
+                        $user_id = $db->lastInsertId();
+    
+                        // Mark invite code as used
+                        $stmt = $db->prepare("UPDATE invite_codes SET used_by = ?, used_at = NOW() WHERE id = ?");
+                        $stmt->execute([$user_id, $invite['id']]);
+    
+                        $db->commit();
+    
+                        $success = 'Account created successfully! You can now login.';
+                    } catch (Exception $e) {
+                        $db->rollBack();
+                        $error = 'Registration failed. Please try again.';
+                    }
                 }
             }
         }
@@ -224,6 +229,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php endif; ?>
 
         <form method="POST">
+            <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
             <div class="form-group">
                 <label for="username">Username</label>
                 <input type="text" id="username" name="username" required value="<?php echo htmlspecialchars($_POST['username'] ?? ''); ?>">

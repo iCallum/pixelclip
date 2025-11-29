@@ -9,30 +9,65 @@ if (isLoggedIn()) {
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = trim($_POST['username'] ?? '');
-    $password = $_POST['password'] ?? '';
-
-    if (empty($username) || empty($password)) {
-        $error = 'Username and password are required';
+    // CSRF Protection
+    if (!isset($_POST['csrf_token']) || !verifyCSRFToken($_POST['csrf_token'])) {
+        $error = 'Invalid request (CSRF token mismatch). Please refresh and try again.';
     } else {
-        $db = getDB();
-        $stmt = $db->prepare("SELECT id, username, password_hash FROM users WHERE username = ? OR email = ?");
-        $stmt->execute([$username, $username]);
-        $user = $stmt->fetch();
+        // Rate Limiting (File-based)
+        $ip = $_SERVER['REMOTE_ADDR'];
+        $limit_file = sys_get_temp_dir() . '/pixelclip_login_attempts.json';
+        $attempts = [];
+        if (file_exists($limit_file)) {
+            $attempts = json_decode(file_get_contents($limit_file), true) ?? [];
+        }
 
-        if ($user && password_verify($password, $user['password_hash'])) {
-            // Update last login
-            $stmt = $db->prepare("UPDATE users SET last_login = NOW() WHERE id = ?");
-            $stmt->execute([$user['id']]);
+        // Clean up old attempts (older than 15 mins)
+        $window = 15 * 60;
+        $now = time();
+        if (isset($attempts[$ip])) {
+            $attempts[$ip] = array_filter($attempts[$ip], function($time) use ($now, $window) {
+                return ($now - $time) < $window;
+            });
+        }
 
-            // Set session
-            $_SESSION['user_id'] = $user['id'];
-            $_SESSION['username'] = $user['username'];
-
-            header('Location: dashboard.php');
-            exit;
+        // Check limit (5 attempts)
+        if (isset($attempts[$ip]) && count($attempts[$ip]) >= 5) {
+            $error = 'Too many login attempts. Please try again in 15 minutes.';
         } else {
-            $error = 'Invalid username or password';
+            $username = trim($_POST['username'] ?? '');
+            $password = $_POST['password'] ?? '';
+        
+            if (empty($username) || empty($password)) {
+                $error = 'Username and password are required';
+            } else {
+                $db = getDB();
+                $stmt = $db->prepare("SELECT id, username, password_hash FROM users WHERE username = ? OR email = ?");
+                $stmt->execute([$username, $username]);
+                $user = $stmt->fetch();
+        
+                if ($user && password_verify($password, $user['password_hash'])) {
+                    // Clear attempts on success
+                    unset($attempts[$ip]);
+                    file_put_contents($limit_file, json_encode($attempts));
+
+                    // Update last login
+                    $stmt = $db->prepare("UPDATE users SET last_login = NOW() WHERE id = ?");
+                    $stmt->execute([$user['id']]);
+        
+                    // Set session
+                    $_SESSION['user_id'] = $user['id'];
+                    $_SESSION['username'] = $user['username'];
+        
+                    header('Location: dashboard.php');
+                    exit;
+                } else {
+                    // Record failed attempt
+                    $attempts[$ip][] = time();
+                    file_put_contents($limit_file, json_encode($attempts));
+                    
+                    $error = 'Invalid username or password';
+                }
+            }
         }
     }
 }
@@ -178,6 +213,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php endif; ?>
 
         <form method="POST">
+            <input type="hidden" name="csrf_token" value="<?php echo generateCSRFToken(); ?>">
             <div class="form-group">
                 <label for="username">Username or Email</label>
                 <input type="text" id="username" name="username" required autofocus>
