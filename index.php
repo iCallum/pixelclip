@@ -185,7 +185,7 @@ $username = $_SESSION['username'] ?? null;
             position: relative;
             z-index: 10;
             text-align: center;
-            padding: 100px 40px 80px;
+            padding: 100px 40px 150px;
             max-width: 900px;
             margin: 0 auto;
             min-height: calc(100vh - 80px);
@@ -492,24 +492,24 @@ $username = $_SESSION['username'] ?? null;
         /* Scroll Down Indicator */
         @keyframes bounce {
             0%, 20%, 50%, 80%, 100% { transform: translateY(0) translateX(-50%); }
-            40% { transform: translateY(-10px) translateX(-50%); }
-            60% { transform: translateY(-5px) translateX(-50%); }
+            40% { transform: translateY(-15px) translateX(-50%); }
+            60% { transform: translateY(-8px) translateX(-50%); }
         }
 
         .scroll-down {
             position: absolute;
-            bottom: 30px;
+            bottom: 50px;
             left: 50%;
             transform: translateX(-50%);
-            color: rgba(255, 255, 255, 0.5);
+            color: rgba(255, 255, 255, 0.8);
             animation: bounce 2s infinite;
             cursor: pointer;
             z-index: 20;
-            transition: color 0.3s;
+            transition: color 0.3s, transform 0.3s;
         }
 
         .scroll-down:hover {
-            color: rgba(255, 255, 255, 0.9);
+            color: #ffffff;
         }
 
         /* Responsive */
@@ -532,7 +532,7 @@ $username = $_SESSION['username'] ?? null;
             }
 
             .hero {
-                padding: 60px 20px 40px;
+                padding: 60px 20px 100px;
                 min-height: calc(100svh - 80px);
             }
 
@@ -617,8 +617,14 @@ $username = $_SESSION['username'] ?? null;
         </div>
 
         <div class="scroll-down" onclick="document.querySelector('.stats-section').scrollIntoView({behavior: 'smooth'})">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M7 13l5 5 5-5M7 6l5 5 5-5"/>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M7 13l5 5 5-5M7 6l5 5 5-5" stroke="url(#scroll-gradient)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <defs>
+                    <linearGradient id="scroll-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#f093fb;stop-opacity:1" />
+                    </linearGradient>
+                </defs>
             </svg>
         </div>
     </section>
