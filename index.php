@@ -23,6 +23,7 @@ $username = $_SESSION['username'] ?? null;
             color: #ffffff;
             min-height: 100vh;
             position: relative;
+            overflow-x: hidden; /* Prevent horizontal scroll from animations */
         }
 
         /* Animated background gradient orbs */
@@ -33,6 +34,7 @@ $username = $_SESSION['username'] ?? null;
             opacity: 0.3;
             animation: float 20s infinite ease-in-out;
             z-index: 0;
+            will-change: transform;
         }
 
         .orb-1 {
@@ -64,15 +66,31 @@ $username = $_SESSION['username'] ?? null;
         }
 
         @keyframes float {
-            0%, 100% {
-                transform: translate(0, 0) scale(1);
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(50px, -50px) scale(1.1); }
+            66% { transform: translate(-30px, 30px) scale(0.9); }
+        }
+
+        @keyframes gradient-shift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
             }
-            33% {
-                transform: translate(50px, -50px) scale(1.1);
+            to {
+                opacity: 1;
+                transform: translateY(0);
             }
-            66% {
-                transform: translate(-30px, 30px) scale(0.9);
-            }
+        }
+
+        @keyframes typing {
+            from { width: 0; }
+            to { width: 100%; }
         }
 
         /* Navbar */
@@ -94,12 +112,14 @@ $username = $_SESSION['username'] ?? null;
         .navbar-logo {
             font-size: 24px;
             font-weight: 700;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            background: linear-gradient(270deg, #667eea, #764ba2, #f093fb, #00f2fe);
+            background-size: 300% 300%;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
             text-decoration: none;
             letter-spacing: -0.5px;
+            animation: gradient-shift 10s ease infinite;
         }
 
         .navbar-links {
@@ -173,13 +193,45 @@ $username = $_SESSION['username'] ?? null;
         .hero h1 {
             font-size: 64px;
             font-weight: 800;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            background: linear-gradient(270deg, #667eea, #764ba2, #f093fb, #4facfe);
+            background-size: 300% 300%;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
             margin-bottom: 24px;
             letter-spacing: -2px;
             line-height: 1.1;
+            animation: gradient-shift 8s ease infinite;
+            display: inline-block;
+        }
+        
+        /* Typing cursor effect wrapper */
+        .typewriter-wrapper {
+            display: inline-block;
+            overflow: hidden; /* Ensures the content is not revealed until the animation */
+            white-space: nowrap; /* Keeps the content on a single line */
+            border-right: .15em solid #f093fb; /* The typwriter cursor */
+            animation: typing 3.5s steps(40, end), blink-caret .75s step-end infinite;
+            margin: 0 auto;
+            max-width: 100%;
+        }
+        
+        /* Only apply typing effect on larger screens where it fits on one line */
+        @media (min-width: 768px) {
+            .hero h1 {
+                /* Reset for typing animation */
+                white-space: nowrap;
+                overflow: hidden;
+                border-right: 3px solid rgba(255,255,255,0.5);
+                width: 0;
+                animation: typing 2s cubic-bezier(0.4, 0, 0.2, 1) forwards, gradient-shift 8s ease infinite;
+                animation-delay: 0.2s; /* Slight delay before typing starts */
+            }
+            
+            /* Remove border after typing finishes */
+            .hero h1.typing-done {
+                border-right: none;
+            }
         }
 
         .hero p {
@@ -190,6 +242,8 @@ $username = $_SESSION['username'] ?? null;
             margin-left: auto;
             margin-right: auto;
             line-height: 1.6;
+            opacity: 0;
+            animation: fadeInUp 0.8s ease forwards 1.5s; /* Delays until after title */
         }
 
         .hero-buttons {
@@ -197,6 +251,8 @@ $username = $_SESSION['username'] ?? null;
             gap: 16px;
             justify-content: center;
             flex-wrap: wrap;
+            opacity: 0;
+            animation: fadeInUp 0.8s ease forwards 1.8s;
         }
 
         .btn {
@@ -259,6 +315,12 @@ $username = $_SESSION['username'] ?? null;
             padding: 32px 24px;
             text-align: center;
             transition: all 0.3s;
+            opacity: 0; /* Hidden initially for scroll reveal */
+            transform: translateY(30px);
+        }
+
+        .stat-card.visible {
+            animation: fadeInUp 0.8s ease forwards;
         }
 
         .stat-card:hover {
@@ -303,6 +365,14 @@ $username = $_SESSION['username'] ?? null;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+        
+        .section-title.visible {
+            opacity: 1;
+            transform: translateY(0);
         }
 
         .features-grid {
@@ -317,11 +387,18 @@ $username = $_SESSION['username'] ?? null;
             border-radius: 16px;
             border: 1px solid rgba(255, 255, 255, 0.1);
             padding: 32px;
-            transition: all 0.3s;
+            transition: transform 0.1s ease, border-color 0.3s ease, background 0.3s ease; /* Faster transform for tilt */
+            opacity: 0;
+            transform: translateY(30px);
+            will-change: transform;
+        }
+        
+        .feature-card.visible {
+            animation: fadeInUp 0.8s ease forwards;
         }
 
+        /* Removed generic hover transform to let JS handle 3D tilt */
         .feature-card:hover {
-            transform: translateY(-4px);
             border-color: rgba(102, 126, 234, 0.3);
             background: rgba(255, 255, 255, 0.08);
         }
@@ -335,6 +412,11 @@ $username = $_SESSION['username'] ?? null;
             display: flex;
             align-items: center;
             justify-content: center;
+            transition: transform 0.3s ease;
+        }
+        
+        .feature-card:hover .feature-icon {
+            transform: scale(1.1) rotate(5deg);
         }
 
         .feature-icon svg {
@@ -455,9 +537,10 @@ $username = $_SESSION['username'] ?? null;
     </style>
 </head>
 <body>
-    <div class="bg-orb orb-1"></div>
-    <div class="bg-orb orb-2"></div>
-    <div class="bg-orb orb-3"></div>
+    <!-- Animated Orbs -->
+    <div class="bg-orb orb-1" id="orb1"></div>
+    <div class="bg-orb orb-2" id="orb2"></div>
+    <div class="bg-orb orb-3" id="orb3"></div>
 
     <!-- Navbar -->
     <nav class="navbar">
@@ -478,7 +561,7 @@ $username = $_SESSION['username'] ?? null;
 
     <!-- Hero Section -->
     <section class="hero">
-        <h1>Your Private Image Host</h1>
+        <h1 id="hero-title">Your Private Image Host</h1>
         <p>Upload, share, and manage your screenshots seamlessly with ShareX integration. Fast, secure, and beautifully simple.</p>
         <div class="hero-buttons">
             <?php if ($isLoggedIn): ?>
@@ -509,21 +592,25 @@ $username = $_SESSION['username'] ?? null;
     <!-- Stats Section -->
     <section class="stats-section">
         <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-number">
-                    <?php
+            <div class="stat-card reveal-on-scroll">
+                <div class="stat-number count-up" data-target="<?php
                     $upload_dir = __DIR__ . '/i/';
+                    $count = 0;
                     if (is_dir($upload_dir)) {
-                        $files = array_diff(scandir($upload_dir), ['.', '..', '.gitkeep']);
-                        echo number_format(count($files));
-                    } else {
-                        echo '0';
+                        // Recursive count for nested folders
+                        $objects = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($upload_dir), RecursiveIteratorIterator::SELF_FIRST);
+                        foreach($objects as $name => $object){
+                            // Skip . and .. and directories
+                            if(!$object->isDir() && $object->getFilename() != '.gitkeep' && $object->getFilename() != '.htaccess' && $object->getFilename() != 'index.php' && $object->getFilename() != 'view.php') {
+                                $count++;
+                            }
+                        }
                     }
-                    ?>
-                </div>
+                    echo $count;
+                ?>">0</div>
                 <div class="stat-label">Total Uploads</div>
             </div>
-            <div class="stat-card">
+            <div class="stat-card reveal-on-scroll" style="animation-delay: 0.2s;">
                 <div class="stat-number">
                     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <circle cx="12" cy="12" r="10" stroke="url(#grad1)" stroke-width="2"/>
@@ -538,7 +625,7 @@ $username = $_SESSION['username'] ?? null;
                 </div>
                 <div class="stat-label">Always Online</div>
             </div>
-            <div class="stat-card">
+            <div class="stat-card reveal-on-scroll" style="animation-delay: 0.4s;">
                 <div class="stat-number">Fast</div>
                 <div class="stat-label">Upload Speed</div>
             </div>
@@ -547,9 +634,9 @@ $username = $_SESSION['username'] ?? null;
 
     <!-- Features Section -->
     <section class="features-section">
-        <h2 class="section-title">Why Choose PixelClip?</h2>
+        <h2 class="section-title reveal-on-scroll">Why Choose PixelClip?</h2>
         <div class="features-grid">
-            <div class="feature-card">
+            <div class="feature-card reveal-on-scroll tilt-card" style="animation-delay: 0.1s;">
                 <div class="feature-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
                         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
@@ -559,7 +646,7 @@ $username = $_SESSION['username'] ?? null;
                 <p>Your images are stored securely with per-user authentication. Only you have access to your uploads.</p>
             </div>
 
-            <div class="feature-card">
+            <div class="feature-card reveal-on-scroll tilt-card" style="animation-delay: 0.2s;">
                 <div class="feature-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
                         <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
@@ -570,7 +657,7 @@ $username = $_SESSION['username'] ?? null;
                 <p>Download your personalized config file and start uploading screenshots instantly with ShareX.</p>
             </div>
 
-            <div class="feature-card">
+            <div class="feature-card reveal-on-scroll tilt-card" style="animation-delay: 0.3s;">
                 <div class="feature-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
                         <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
@@ -580,7 +667,7 @@ $username = $_SESSION['username'] ?? null;
                 <p>Built with performance in mind. Upload and share your images at blazing speeds.</p>
             </div>
 
-            <div class="feature-card">
+            <div class="feature-card reveal-on-scroll tilt-card" style="animation-delay: 0.4s;">
                 <div class="feature-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
                         <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
@@ -591,7 +678,7 @@ $username = $_SESSION['username'] ?? null;
                 <p>Manage all your uploads in one place. View, organize, and delete with a beautiful interface.</p>
             </div>
 
-            <div class="feature-card">
+            <div class="feature-card reveal-on-scroll tilt-card" style="animation-delay: 0.5s;">
                 <div class="feature-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -603,7 +690,7 @@ $username = $_SESSION['username'] ?? null;
                 <p>Drag, drop, or use ShareX. Multiple upload methods make sharing images effortless.</p>
             </div>
 
-            <div class="feature-card">
+            <div class="feature-card reveal-on-scroll tilt-card" style="animation-delay: 0.6s;">
                 <div class="feature-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
                         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
@@ -643,5 +730,99 @@ $username = $_SESSION['username'] ?? null;
             &copy; <?php echo date('Y'); ?> PixelClip. Built with PHP & MySQL.
         </div>
     </footer>
+
+    <script>
+        // 1. Hero Typing Effect Cleanup
+        const heroTitle = document.getElementById('hero-title');
+        if (heroTitle) {
+            heroTitle.addEventListener('animationend', (e) => {
+                if (e.animationName === 'typing') {
+                    heroTitle.classList.add('typing-done');
+                }
+            });
+        }
+
+        // 2. Intersection Observer for Scroll Reveal
+        const observerOptions = {
+            root: null,
+            rootMargin: '0px',
+            threshold: 0.1
+        };
+
+        const observer = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    
+                    // Trigger count animation if this is a stat card
+                    const counter = entry.target.querySelector('.count-up');
+                    if (counter) {
+                        animateValue(counter, 0, parseInt(counter.getAttribute('data-target')), 2000);
+                        counter.classList.remove('count-up'); // Prevent re-running
+                    }
+                    
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.reveal-on-scroll').forEach(el => {
+            observer.observe(el);
+        });
+
+        // 3. Count Up Animation
+        function animateValue(obj, start, end, duration) {
+            if (end === 0) return;
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                obj.innerHTML = Math.floor(progress * (end - start) + start).toLocaleString();
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        // 4. Mouse Parallax for Orbs
+        document.addEventListener('mousemove', (e) => {
+            const x = e.clientX / window.innerWidth;
+            const y = e.clientY / window.innerHeight;
+            
+            const moveOrb = (id, speed) => {
+                const orb = document.getElementById(id);
+                const xOffset = (x - 0.5) * speed;
+                const yOffset = (y - 0.5) * speed;
+                orb.style.transform = `translate(${xOffset}px, ${yOffset}px)`;
+            }
+            
+            moveOrb('orb1', 30);
+            moveOrb('orb2', -20);
+            moveOrb('orb3', 10);
+        });
+
+        // 5. 3D Tilt Effect for Feature Cards
+        document.querySelectorAll('.tilt-card').forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                // Calculate rotation based on mouse position (max 10deg)
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                
+                const rotateX = ((y - centerY) / centerY) * -5; // Invert Y axis
+                const rotateY = ((x - centerX) / centerX) * 5;
+                
+                card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
+            });
+
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale3d(1, 1, 1)';
+            });
+        });
+    </script>
 </body>
 </html>
