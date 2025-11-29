@@ -530,7 +530,7 @@ $username = $_SESSION['username'] ?? null;
 
             .hero {
                 padding: 60px 20px 40px;
-                min-height: calc(100vh - 80px);
+                min-height: calc(100svh - 80px);
                 display: flex;
                 flex-direction: column;
                 justify-content: center;
